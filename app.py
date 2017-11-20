@@ -1,19 +1,21 @@
+
 # First, we import the packages we need for the project.
 from flask import Flask, request, render_template, redirect, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask.ext.bcrypt import Bcrypt
 from config import db_config
 import json, datetime
 # This line calls the constructor for the Flask app, issuing the name of the file (app.py) as a parameter
 app = Flask(__name__)
 # And we set the DEBUG to be 'true' - this allows making changes to the app visible without rebooting the whole server
 app.config['DEBUG'] = True
-# db = SQLAlchemy(app)
-
+# We'll use BCrypt to crypt the passwords
+bcrypt = Bcrypt(app)
 # db_config is a struct stored in another file (config.py), 
 # so it can easily be aded to .gitignore in order to avoid exposing database connection details
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://%(user)s:%(pw)s@%(host)s:%(port)s/%(db)s' % db_config
 db = SQLAlchemy(app)
-# We define a class to be used by SQLAlchemy when accessing the database
+# We define a Post class to be used by SQLAlchemy when accessing the database
 class Post(db.Model):
     # As per usual, the primary key is an auto incrementing integer called 'id'
     # The other attributes should be pretty self explanatory as well
@@ -44,6 +46,13 @@ class Post(db.Model):
             'title': self.title,
             'last_updated': self.last_updated
         }
+
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+    password = db.Column(db.String(128), unique=False, nullable=False)
+    role = db.Column(db.String(64), unique=False, nullable=False)
 
 # Just a placeholder, for easy checking if the server is functional
 @app.route('/')
@@ -89,6 +98,38 @@ def delete_post(post_id):
     Post.query.filter_by(id = post_id).delete()
     db.session.commit()
     return str(post_id)
+
+@app.route('/admin/login', methods = ['GET'])
+def login_screen():
+    return render_template('login.html')
+
+@app.route('/admin/login', methods = ['POST'])
+def login():
+    user = User(username = request.form['username'], password = request.form['password'])
+    user_from_db = User.query.filter_by(username = request.form['username']).first()
+    if bcrypt.check_password_hash(user_from_db.password, user.password):
+        return 'Success!'
+    else:
+        return render_template('login.html', message = "Username and/or Password wrong!")
+
+@app.route('/signup', methods = ['GET'])
+def signup_screen():
+    return render_template('signup.html')
+
+@app.route('/signup', methods = ['POST'])
+def signup():
+    username = request.form['username']
+    password = request.form['password']
+    password_again = request.form['password_again']
+    if password is not password_again:
+        return 'Passwords do not match!'
+    user = User(username = username, password = bcrypt.generate_password_hash(password), role = 'USER')
+    db.session.add(user)
+    db.session.commit()
+    return render_template('login.html', message = 'Signup succesful!')
+
+@app.route('/admin', methods = ['GET'])
+    return 'ADMIN PAGE IS HERE'
 
 # d = request.args.get('id', '') 
 # This is only used when using the dev server.

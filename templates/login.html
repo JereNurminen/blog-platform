@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>BLOG ADMIN</title>
+  </head>
+  <body>
+		{% if message is defined %} 
+				<span>{{ message }}</span>
+		{% endif %}
+		<form method="POST" action="/admin/login">
+				<input name="username" type="text"/>
+				<input name="password" type="password"/>
+				<button>Login</button>
+		</form>
+  </body>
+</html>
