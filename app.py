@@ -108,6 +108,8 @@ def login():
     user = User(username = request.form['username'], password = request.form['password'])
     user_from_db = User.query.filter_by(username = request.form['username']).first()
     if bcrypt.check_password_hash(user_from_db.password, user.password):
+        session['logged_in'] = True
+        session['user_id'] = user_from_db.id
         return 'Success!'
     else:
         return render_template('login.html', message = "Username and/or Password wrong!")
