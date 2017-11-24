@@ -1,6 +1,7 @@
 
 # First, we import the packages we need for the project.
-from flask import Flask, request, render_template, redirect, jsonify
+from flask import Flask, request, render_template, redirect, jsonify, session
+from flask.ext.login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask.ext.bcrypt import Bcrypt
 from config import db_config
@@ -9,10 +10,12 @@ import json, datetime
 app = Flask(__name__)
 # And we set the DEBUG to be 'true' - this allows making changes to the app visible without rebooting the whole server
 app.config['DEBUG'] = True
-# We'll use BCrypt to crypt the passwords
+# We'll use BCrypt t
+# This will 
+login_manager = LoginManager()
 bcrypt = Bcrypt(app)
 # db_config is a struct stored in another file (config.py), 
-# so it can easily be aded to .gitignore in order to avoid exposing database connection details
+# so it can easily be added to .gitignore in order to avoid exposing database connection details
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://%(user)s:%(pw)s@%(host)s:%(port)s/%(db)s' % db_config
 db = SQLAlchemy(app)
 # We define a Post class to be used by SQLAlchemy when accessing the database
@@ -47,12 +50,33 @@ class Post(db.Model):
             'last_updated': self.last_updated
         }
 
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     password = db.Column(db.String(128), unique=False, nullable=False)
     role = db.Column(db.String(64), unique=False, nullable=False)
+    authenticated = db.Column(db.Boolean, default=False, nullable=True)
+
+    # The following functions are needed for Flask-Login
+    # All users are active, so this always returns True
+    def is_active(self):
+        return True
+
+    # Returns the user's ID
+    def get_id(self):
+        return self.id
+
+    # Returns if the user is authenticated
+    def is_authenticated(self):
+        return self.authenticated
+
+    # No anonymous users allowed, so always returns False
+    def is_anonymous(self):
+        return False
+
+@login_manager.user_loader
+def user_loader(user_id):
+    return User.query.get(user_id)
 
 # Just a placeholder, for easy checking if the server is functional
 @app.route('/')
@@ -93,6 +117,7 @@ def load_posts_list():
         posts.append(post.slim_serialize)
     return jsonify(posts)
 
+@login_required
 @app.route('/api/posts/delete/<int:post_id>')
 def delete_post(post_id):
     Post.query.filter_by(id = post_id).delete()
@@ -107,12 +132,20 @@ def login_screen():
 def login():
     user = User(username = request.form['username'], password = request.form['password'])
     user_from_db = User.query.filter_by(username = request.form['username']).first()
-    if bcrypt.check_password_hash(user_from_db.password, user.password):
-        session['logged_in'] = True
-        session['user_id'] = user_from_db.id
-        return 'Success!'
+    if user_from_db is not None:
+        if bcrypt.check_password_hash(user_from_db.password, user.password):
+            session['logged_in'] = True
+            session['user_id'] = user_from_db.id
+            user.authenticated = True
+            db.session.add(user)
+            db.session.commit()
+            login_user(user, remember=True)
+            return 'Success!'
+        else:
+            return render_template('login.html', message = "Username and/or Password wrong!")
     else:
         return render_template('login.html', message = "Username and/or Password wrong!")
+
 
 @app.route('/signup', methods = ['GET'])
 def signup_screen():
@@ -131,7 +164,11 @@ def signup():
     return render_template('login.html', message = 'Signup succesful!')
 
 @app.route('/admin', methods = ['GET'])
-    return 'ADMIN PAGE IS HERE'
+def admin_page():
+    if 'logged_in' in session:
+        return 'ADMIN PAGE IS HERE'
+    else:
+        return 'PLEASE SIGN UP'
 
 # d = request.args.get('id', '') 
 # This is only used when using the dev server.
