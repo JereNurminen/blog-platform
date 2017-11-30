@@ -122,7 +122,7 @@
 										<input type="text" placeholder="Title" name="title" className="editor_input">
 										</input>
 										<textarea placeholder="Text" name="text" className="editor_input">
-												{this.state.post != undefined && this.state.post.text}
+												{this.props.post.text}
 										</textarea>
 										<div className="button_container">
 												<button>Publish</button>
@@ -164,7 +164,7 @@
 		}
 
 		cancelPost() {
-				this.setState({editor: true})
+				this.setState({editor: false})
 		}
 
       render() {
@@ -174,13 +174,13 @@
 				<td>{this.props.post.title}</td>
 				<td>{this.props.post.created}</td>
 				<td>{this.props.post.last_updated}</td>
-				<td><i onClick={this.delete} className="icon fa fa-trash" aria-hidden="true"></i></td>
 				<td><i onClick={this.openEditor} className="icon fa fa-pencil-square" aria-hidden="true"></i></td>
+				<td><i onClick={this.delete} className="icon fa fa-trash" aria-hidden="true"></i></td>
         </tr>
 		{this.state.editor && 
 				<tr>
 						<td colSpan="5">
-								<Editor post={this.state.post} cancel={this.cancelPost} />
+								<Editor post={this.props.post} cancel={this.cancelPost} />
 						</td>
 				</tr>
 		}
@@ -188,6 +188,7 @@
         )
       }
     }
+
     ReactDOM.render(<App/>, document.getElementById('root') );
 </script>
 
