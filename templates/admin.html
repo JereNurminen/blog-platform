@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Blog admin page</title>
+</head>
+
+<body>
+<div class='container'>
+    <div id='root'></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" />
+<link rel="stylesheet" href="/static/style.css"/>
+<script src="https://use.fontawesome.com/c167cc7952.js"></script>
+
+<script type="text/babel">
+    class App extends React.Component {
+      render() {
+        return (
+          <Posts/>
+        );
+      }
+    }
+    class Posts extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          posts: {},
+          loadComplete: false
+        };
+      }
+      componentWillMount() {
+          fetch('https://dev.jerenurminen.me/api/posts/')
+            .then((response) => response.json())
+            .then((responseData) => {
+              console.log(this);
+              this.setState({
+                posts: responseData,
+                loadComplete: true
+              });
+            });
+      }
+
+		updateList() {
+				this.forceUpdate()
+		}
+
+      render() {
+        if (this.state.loadComplete) {
+          return (
+            <table>
+                <tr>
+                  <th>Title</th>
+                  <th>Posted</th>
+                  <th>Last Updated</th>
+				  <th></th>
+				  <th></th>
+                </tr>
+                {this.state.posts.map((post) => {
+                  return (
+					<Post post={post} updateList={this.updateList}/>
+                  )
+                })}
+            </table>
+          );
+        } else {
+          return (
+            <div>Loading...</div>
+          )
+        }
+      }
+    }
+    class Post extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+            post: {}
+        };
+		this.delete = this.delete.bind(this);
+      }
+
+		delete() {
+				if (confirm('Do you really want to delete "' + this.props.post.title + '"?')) {
+						fetch('https://dev.jerenurminen.me/api/posts/' + this.props.post.id , {
+							method: 'DELETE'		
+						}).then((response) => {
+								console.log(response)
+								alert('Post deleted!')
+								updateList();
+						});
+				}
+		}
+
+      render() {
+        return (
+		<tr key={this.props.post.id}>
+				<td>{this.props.post.title}</td>
+				<td>{this.props.post.created}</td>
+				<td>{this.props.post.last_updated}</td>
+				<td><i onClick={this.delete} className="icon fa fa-trash" aria-hidden="true"></i></td>
+				<td><i className="icon fa fa-pencil-square" aria-hidden="true"></i></td>
+        </tr>
+        )
+      }
+    }
+    ReactDOM.render(<App/>, document.getElementById('root') );
+</script>
+
+</body>
+</html>
