@@ -4,7 +4,7 @@ from flask import Flask, request, render_template, redirect, jsonify, session
 from flask.ext.login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask.ext.bcrypt import Bcrypt
-from config import db_config
+from config import db_config, secret_key
 import json, datetime
 # This line calls the constructor for the Flask app, issuing the name of the file (app.py) as a parameter
 app = Flask(__name__)
@@ -17,6 +17,10 @@ bcrypt = Bcrypt(app)
 # db_config is a struct stored in another file (config.py), 
 # so it can easily be added to .gitignore in order to avoid exposing database connection details
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://%(user)s:%(pw)s@%(host)s:%(port)s/%(db)s' % db_config
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+# Same as db_config, the secret key is stored in config.py
+app.secret_key = secret_key
 db = SQLAlchemy(app)
 # We define a Post class to be used by SQLAlchemy when accessing the database
 class Post(db.Model):
@@ -83,8 +87,13 @@ def user_loader(user_id):
 def index():
     return 'Hello!'
 
+#####################
+### API ENDPOINTS ###
+#####################
+
 # TODO replace with a proper saving function
 @app.route('/api/save/')
+@login_required
 def save_post():
     post_title = request.args.get('title', '')
     post_text = request.args.get('text', '')
@@ -94,7 +103,7 @@ def save_post():
     return jsonify(post.serialize)
 
 # For getting a specific post
-@app.route('/api/posts/<int:post_id>')
+@app.route('/api/posts/<int:post_id>', methods = ['GET'])
 def load_post(post_id):
     post = Post.query.filter_by(id = post_id).first()
     return jsonify(post.serialize)
@@ -117,12 +126,19 @@ def load_posts_list():
         posts.append(post.slim_serialize)
     return jsonify(posts)
 
-@login_required
-@app.route('/api/posts/delete/<int:post_id>')
+@app.route('/api/posts/<int:post_id>', methods = ['DELETE'])
+# @login_required
 def delete_post(post_id):
-    Post.query.filter_by(id = post_id).delete()
-    db.session.commit()
-    return str(post_id)
+    if current_user.is_authenticated:
+        Post.query.filter_by(id = post_id).delete()
+        db.session.commit()
+        return str(post_id)
+    else:
+        return "Not authenticated!"
+
+######################
+### PAGE ENDPOINTS ###
+######################
 
 @app.route('/admin/login', methods = ['GET'])
 def login_screen():
@@ -131,21 +147,29 @@ def login_screen():
 @app.route('/admin/login', methods = ['POST'])
 def login():
     user = User(username = request.form['username'], password = request.form['password'])
-    user_from_db = User.query.filter_by(username = request.form['username']).first()
+    user_from_db = User.query.filter_by(username = user.username).first()
     if user_from_db is not None:
         if bcrypt.check_password_hash(user_from_db.password, user.password):
             session['logged_in'] = True
             session['user_id'] = user_from_db.id
-            user.authenticated = True
-            db.session.add(user)
+            user_from_db.authenticated = True
+            db.session.add(user_from_db)
             db.session.commit()
-            login_user(user, remember=True)
-            return 'Success!'
+            login_user(user_from_db, remember=True)
+            return redirect("/admin")
         else:
             return render_template('login.html', message = "Username and/or Password wrong!")
     else:
         return render_template('login.html', message = "Username and/or Password wrong!")
 
+@app.route('/admin/logout')
+def logout():
+    user = current_user
+    user.authenticated = False
+    db.session.add(user)
+    db.session.commit()
+    logout_user()                        
+    return render_template('login.html', message = 'Logged out!')
 
 @app.route('/signup', methods = ['GET'])
 def signup_screen():
@@ -156,7 +180,7 @@ def signup():
     username = request.form['username']
     password = request.form['password']
     password_again = request.form['password_again']
-    if password is not password_again:
+    if password != password_again:
         return 'Passwords do not match!'
     user = User(username = username, password = bcrypt.generate_password_hash(password), role = 'USER')
     db.session.add(user)
@@ -164,11 +188,9 @@ def signup():
     return render_template('login.html', message = 'Signup succesful!')
 
 @app.route('/admin', methods = ['GET'])
+@login_required
 def admin_page():
-    if 'logged_in' in session:
-        return 'ADMIN PAGE IS HERE'
-    else:
-        return 'PLEASE SIGN UP'
+    return render_template('admin.html')
 
 # d = request.args.get('id', '') 
 # This is only used when using the dev server.

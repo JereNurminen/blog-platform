@@ -10,7 +10,7 @@
     <div id='root'></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" />
@@ -30,9 +30,13 @@
         super(props);
         this.state = {
           posts: {},
-          loadComplete: false
+          loadComplete: false,
+		  update: false,
+		  editor: false
         };
+		this.handler = this.handler.bind(this);
       }
+
       componentWillMount() {
           fetch('https://dev.jerenurminen.me/api/posts/')
             .then((response) => response.json())
@@ -43,15 +47,42 @@
                 loadComplete: true
               });
             });
+			this.openEditor = this.openEditor.bind(this);
+			this.cancelPost = this.cancelPost.bind(this);
       }
 
-		updateList() {
-				this.forceUpdate()
+		handler() {
+				console.log('Update..?');
+				fetch('https://dev.jerenurminen.me/api/posts/')
+				.then((resaponse) => response.json())
+				.then((responseData) => {
+						console.log(this);
+						this.setState({
+								posts: responseData,
+								loadComplete: true
+						});
+				});
+		}
+
+		openEditor() {
+				console.log('Opening editor...')
+				this.setState({
+						editor: true
+				})
+		}
+
+		cancelPost() {
+				this.setState({
+					editor: false
+				})
 		}
 
       render() {
         if (this.state.loadComplete) {
           return (
+		  <div className="post_container">
+		  <button onClick={this.openEditor}>New Post</button>
+		  {this.state.editor && <Editor cancel={this.cancelPost}/> }
             <table>
                 <tr>
                   <th>Title</th>
@@ -60,12 +91,13 @@
 				  <th></th>
 				  <th></th>
                 </tr>
-                {this.state.posts.map((post) => {
+		          {this.state.posts.map((post) => {
                   return (
-					<Post post={post} updateList={this.updateList}/>
+					<Post post={post} handler={this.handler}/>
                   )
                 })}
             </table>
+			</div>
           );
         } else {
           return (
@@ -74,36 +106,85 @@
         }
       }
     }
+
+		class Editor extends React.Component {
+				constructor(props) {
+						super(props)
+						this.state = {
+								post: {}
+						}
+				}
+
+				render() {
+
+						return(
+								<div className="editor">
+										<input type="text" placeholder="Title" name="title" className="editor_input">
+										</input>
+										<textarea placeholder="Text" name="text" className="editor_input">
+												{this.state.post != undefined && this.state.post.text}
+										</textarea>
+										<div className="button_container">
+												<button>Publish</button>
+												<button onClick={this.props.cancel}>Cancel</button>
+										</div>
+								</div>
+						)
+		
+				}
+		}
+
     class Post extends React.Component {
       constructor(props) {
         super(props);
         this.state = {
-            post: {}
+            post: {},
+			editor: false
         };
 		this.delete = this.delete.bind(this);
+		this.openEditor = this.openEditor.bind(this);
+		this.cancelPost = this.cancelPost.bind(this);
       }
 
 		delete() {
 				if (confirm('Do you really want to delete "' + this.props.post.title + '"?')) {
 						fetch('https://dev.jerenurminen.me/api/posts/' + this.props.post.id , {
-							method: 'DELETE'		
+							method: 'DELETE',
+							credentials: "same-origin"
 						}).then((response) => {
 								console.log(response)
 								alert('Post deleted!')
-								updateList();
+								this.props.handler();
 						});
 				}
 		}
 
+		openEditor() {
+				this.setState({editor: true})
+		}
+
+		cancelPost() {
+				this.setState({editor: true})
+		}
+
       render() {
         return (
+		<tbody>
 		<tr key={this.props.post.id}>
 				<td>{this.props.post.title}</td>
 				<td>{this.props.post.created}</td>
 				<td>{this.props.post.last_updated}</td>
 				<td><i onClick={this.delete} className="icon fa fa-trash" aria-hidden="true"></i></td>
-				<td><i className="icon fa fa-pencil-square" aria-hidden="true"></i></td>
+				<td><i onClick={this.openEditor} className="icon fa fa-pencil-square" aria-hidden="true"></i></td>
         </tr>
+		{this.state.editor && 
+				<tr>
+						<td colSpan="5">
+								<Editor post={this.state.post} cancel={this.cancelPost} />
+						</td>
+				</tr>
+		}
+		</tbody>
         )
       }
     }

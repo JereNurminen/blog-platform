@@ -1,7 +1,18 @@
 .icon {
 		font-size: 30px;
+		cursor: pointer;
 }
 
 table {
+		width: 100%;
+}
+
+.editor_input,
+.button_container{
+		clear: both;
+		float: left;
+}
+
+.editor_input {
 		width: 100%;
 }
