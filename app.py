@@ -4,6 +4,8 @@ from flask import Flask, request, render_template, redirect, jsonify, session
 from flask.ext.login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask.ext.bcrypt import Bcrypt
+# from flaskext.markdown import Markdown
+from flask.ext.misaka import Misaka
 from config import db_config, secret_key
 import json, datetime
 # This line calls the constructor for the Flask app, issuing the name of the file (app.py) as a parameter
@@ -22,6 +24,9 @@ login_manager.login_view = 'login'
 # Same as db_config, the secret key is stored in config.py
 app.secret_key = secret_key
 db = SQLAlchemy(app)
+# We define the Markdown module so we can format our posts
+# Markdown(app)
+Misaka(app)
 # We define a Post class to be used by SQLAlchemy when accessing the database
 class Post(db.Model):
     # As per usual, the primary key is an auto incrementing integer called 'id'
@@ -85,7 +90,8 @@ def user_loader(user_id):
 # Just a placeholder, for easy checking if the server is functional
 @app.route('/')
 def index():
-    return 'Hello!'
+    posts = Post.query.all()
+    return render_template('index.html', posts = posts)
 
 #####################
 ### API ENDPOINTS ###

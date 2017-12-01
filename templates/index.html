@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>BLOG ADMIN</title>
+  </head>
+  <body>
+				<header>
+								<h1>Jere Nurminen</h1> 
+								<h2>Blog</h2>
+				</header>
+				<div id="content">
+								{% for post in posts: %}
+												<div class="post_container">
+																<h3>{{ post.title }}</h3>
+																<div class="post_content">
+																				{{ post.text | markdown}}
+																</div>
+												</div>
+								{% endfor  %}
+				</div>
+  </body>
+</html>
