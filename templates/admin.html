@@ -13,6 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.js"></script>
+<link href="https://fonts.googleapis.com/css?family=Fjalla+One|Vollkorn" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" />
 <link rel="stylesheet" href="/static/style.css"/>
 <script src="https://use.fontawesome.com/c167cc7952.js"></script>
@@ -81,7 +82,7 @@
       render() {
         if (this.state.loadComplete) {
           return (
-		  <div className="post_container">
+		  <div className="admin_container">
 		  <button onClick={this.openEditor}>New Post</button>
 		  {this.state.editor && <Editor cancel={this.cancelPost} handler={this.handler} post={this.emptyPost}/> }
             <table>
@@ -89,6 +90,7 @@
                   <th>Title</th>
                   <th>Posted</th>
                   <th>Last Updated</th>
+				  <th></th>
 				  <th></th>
 				  <th></th>
                 </tr>
@@ -253,6 +255,7 @@
 				<td>{this.props.post.last_updated}</td>
 				<td><i onClick={this.openEditor} className="icon fa fa-pencil-square" aria-hidden="true"></i></td>
 				<td><i onClick={this.delete} className="icon fa fa-trash" aria-hidden="true"></i></td>
+				<td><a href={'/' + this.props.post.id}><i className="icon fa fa-external-link" aria-hidden="true"></i></a></td>
         </tr>
 		{this.state.editor && 
 				<tr>

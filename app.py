@@ -87,12 +87,6 @@ class User(db.Model):
 def user_loader(user_id):
     return User.query.get(user_id)
 
-# Just a placeholder, for easy checking if the server is functional
-@app.route('/')
-def index():
-    posts = Post.query.all()
-    return render_template('index.html', posts = posts)
-
 #####################
 ### API ENDPOINTS ###
 #####################
@@ -157,9 +151,25 @@ def delete_post(post_id):
     else:
         return "Not authenticated", 403
 
-######################
-### PAGE ENDPOINTS ###
-######################
+###########################
+### BLOG PAGE ENDPOINTS ###
+###########################
+
+# Front page
+@app.route('/')
+def index():
+    posts = Post.query.all()
+    return render_template('index.html', posts = posts)
+
+# Individual post
+@app.route('/<int:post_id>')
+def post_page(post_id):
+    post = Post.query.filter_by(id = post_id).first()
+    return render_template('post.html', post = post)
+
+############################
+### ADMIN PAGE ENDPOINTS ###
+############################
 
 @app.route('/admin/login', methods = ['GET'])
 def login_screen():

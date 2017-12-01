@@ -1,23 +1,32 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8">
-    <title>BLOG ADMIN</title>
+		<meta charset="UTF-8">
+		<title>Jere Nurminen || Blog</title>
+		<link href="https://fonts.googleapis.com/css?family=Fjalla+One|Vollkorn" rel="stylesheet"> 
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" />
+		<link rel="stylesheet" href="/static/style.css"/>
+		<script src="https://use.fontawesome.com/c167cc7952.js"></script>
   </head>
   <body>
+		  <div id="container">
 				<header>
 								<h1>Jere Nurminen</h1> 
 								<h2>Blog</h2>
 				</header>
 				<div id="content">
 								{% for post in posts: %}
+								<a href="/{{ post.id }}">
 												<div class="post_container">
+														<span class="post-date">{{ post.last_updated }}</span>
 																<h3>{{ post.title }}</h3>
 																<div class="post_content">
 																				{{ post.text | markdown}}
 																</div>
 												</div>
+								</a>
 								{% endfor  %}
 				</div>
+		  </div>
   </body>
 </html>
