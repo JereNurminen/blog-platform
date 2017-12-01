@@ -37,6 +37,7 @@
 		this.handler = this.handler.bind(this);
 		this.openEditor = this.openEditor.bind(this);
 		this.cancelPost = this.cancelPost.bind(this);
+		this.emptyPost = {title: '', text: ''};
       }
 
       componentWillMount() {
@@ -82,7 +83,7 @@
           return (
 		  <div className="post_container">
 		  <button onClick={this.openEditor}>New Post</button>
-		  {this.state.editor && <Editor cancel={this.cancelPost} handler={this.handler}/> }
+		  {this.state.editor && <Editor cancel={this.cancelPost} handler={this.handler} post={this.emptyPost}/> }
             <table>
                 <tr>
                   <th>Title</th>
