@@ -91,16 +91,31 @@ def index():
 ### API ENDPOINTS ###
 #####################
 
-# TODO replace with a proper saving function
-@app.route('/api/save/')
-@login_required
+@app.route('/api/posts/', methods = ['POST'])
+# @login_required
 def save_post():
-    post_title = request.args.get('title', '')
-    post_text = request.args.get('text', '')
-    post = Post(title = post_title, text = post_text, last_updated = datetime.datetime.now())
-    db.session.add(post)
-    db.session.commit()
-    return jsonify(post.serialize)
+    if current_user.is_authenticated:
+        post_json = request.json
+        post = Post(title = post_json['title'], text = post_json['text'], last_updated = datetime.datetime.now())
+        db.session.add(post)
+        db.session.commit()
+        return jsonify(post.serialize)
+    else:
+        return 'Not authenticated', 403
+
+@app.route('/api/posts/<int:post_id>', methods = ['PUT'])
+# @login_required
+def update_post(post_id):
+    if current_user.is_authenticated:
+        post_json = request.json
+        post = Post.query.filter_by(id = post_id).first()
+        post.title = post_json['title']
+        post.text = post_json['text']
+        post.last_updated = datetime.datetime.now()
+        db.session.commit()
+        return jsonify(post.serialize)
+    else:
+        return 'Not authenticated', 403
 
 # For getting a specific post
 @app.route('/api/posts/<int:post_id>', methods = ['GET'])
@@ -109,7 +124,7 @@ def load_post(post_id):
     return jsonify(post.serialize)
 
 # For getting all posts. This will return all post content
-@app.route('/api/posts/')
+@app.route('/api/posts/', methods = ['GET'])
 def load_posts():
     posts = []
     posts_from_db = Post.query.all()
@@ -134,7 +149,7 @@ def delete_post(post_id):
         db.session.commit()
         return str(post_id)
     else:
-        return "Not authenticated!"
+        return "Not authenticated", 403
 
 ######################
 ### PAGE ENDPOINTS ###

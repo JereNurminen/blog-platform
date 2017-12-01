@@ -35,27 +35,27 @@
 		  editor: false
         };
 		this.handler = this.handler.bind(this);
+		this.openEditor = this.openEditor.bind(this);
+		this.cancelPost = this.cancelPost.bind(this);
       }
 
       componentWillMount() {
           fetch('https://dev.jerenurminen.me/api/posts/')
-            .then((response) => response.json())
-            .then((responseData) => {
+            .then(response => response.json())
+            .then(responseData => {
               console.log(this);
               this.setState({
                 posts: responseData,
                 loadComplete: true
               });
             });
-			this.openEditor = this.openEditor.bind(this);
-			this.cancelPost = this.cancelPost.bind(this);
       }
 
 		handler() {
 				console.log('Update..?');
 				fetch('https://dev.jerenurminen.me/api/posts/')
-				.then((resaponse) => response.json())
-				.then((responseData) => {
+				.then(response => response.json())
+				.then(responseData => {
 						console.log(this);
 						this.setState({
 								posts: responseData,
@@ -82,7 +82,7 @@
           return (
 		  <div className="post_container">
 		  <button onClick={this.openEditor}>New Post</button>
-		  {this.state.editor && <Editor cancel={this.cancelPost}/> }
+		  {this.state.editor && <Editor cancel={this.cancelPost} handler={this.handler}/> }
             <table>
                 <tr>
                   <th>Title</th>
@@ -109,23 +109,97 @@
 
 		class Editor extends React.Component {
 				constructor(props) {
-						super(props)
+						super(props);
 						this.state = {
-								post: {}
+								post: {},
+								title: this.props.post.title,
+								text: this.props.post.text,
+								update: false
 						}
+						this.defaultState = this.state;
+						this.publishPost = this.publishPost.bind(this);
+						this.updatePost = this.updatePost.bind(this);
+						this.handleTitleChange = this.handleTitleChange.bind(this);
+						this.handleTextChange = this.handleTextChange.bind(this);
+				}
+
+				handleTitleChange(event) {
+						this.setState({title: event.target.value});
+				}
+
+				handleTextChange(event) {
+						this.setState({text: event.target.value});
+				}
+
+				publishPost() {
+						console.log({
+								title: this.state.title,
+								text: this.state.text
+						});
+
+						fetch('/api/posts/', { 
+								method: 'POST', 
+								headers: { 
+										'Accept': 'application/json', 
+										'Content-Type': 'application/json'
+								}, body: JSON.stringify({ 
+										title: this.state.title,
+										text: this.state.text
+								}), credentials: 'same-origin'
+						}).then((response) => {
+								console.log(response);
+						}).catch(error => {
+								alert('An error occured, see the console for more information.');
+								console.log(error);
+						});
+						alert('Post published');
+						this.setState(this.defaultState);
+						this.props.handler();
+				}
+
+				updatePost() {
+						console.log({
+								title: this.state.title,
+								text: this.state.text
+						});
+
+						fetch('/api/posts/' + this.props.post.id, { 
+								method: 'PUT',
+								headers: { 
+										'Accept': 'application/json', 
+										'Content-Type': 'application/json'
+								}, body: JSON.stringify({
+										id: this.props.post.id,
+										title: this.state.title,
+										text: this.state.text
+								}), credentials: 'same-origin'
+						}).then((response) => {
+								console.log(response);
+						}).catch(error => {
+								alert('An error occured, see the console for more information.');
+								console.log(error);
+						});
+						alert('Post updated');
+						this.defaultState = this.state;
+						this.setState(this.defaultState);
+						this.props.handler();
 				}
 
 				render() {
 
 						return(
 								<div className="editor">
-										<input type="text" placeholder="Title" name="title" className="editor_input">
+										<input onChange={this.handleTitleChange} value={this.state.title} type="text" placeholder="Title" name="title" className="editor_input">
 										</input>
-										<textarea placeholder="Text" name="text" className="editor_input">
-												{this.props.post.text}
+										<textarea onChange={this.handleTextChange} value={this.state.text} placeholder="Text" name="text" className="editor_input">
+												{this.props.post && this.props.post.text}
 										</textarea>
 										<div className="button_container">
-												<button>Publish</button>
+										{this.props.update ? (
+												<button onClick={this.updatePost}>Update</button>
+										) : (
+												<button onClick={this.publishPost}>Publish</button>
+										)}
 												<button onClick={this.props.cancel}>Cancel</button>
 										</div>
 								</div>
@@ -151,10 +225,12 @@
 						fetch('https://dev.jerenurminen.me/api/posts/' + this.props.post.id , {
 							method: 'DELETE',
 							credentials: "same-origin"
-						}).then((response) => {
-								console.log(response)
+						}).then(() => {
 								alert('Post deleted!')
 								this.props.handler();
+						}).catch((error) => {
+								alert('An error occured! See the console for more details.');
+								console.log(error);
 						});
 				}
 		}
@@ -180,7 +256,7 @@
 		{this.state.editor && 
 				<tr>
 						<td colSpan="5">
-								<Editor post={this.props.post} cancel={this.cancelPost} />
+								<Editor update={true} post={this.props.post} cancel={this.cancelPost} handler={this.props.handler} />
 						</td>
 				</tr>
 		}
