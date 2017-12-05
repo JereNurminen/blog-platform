@@ -9,24 +9,24 @@
 		<script src="https://use.fontawesome.com/c167cc7952.js"></script>
   </head>
   <body>
-		  <div id="container">
-				<header>
-								<h1>Jere Nurminen</h1> 
-								<h2>Blog</h2>
-				</header>
-				<div id="content">
-								{% for post in posts: %}
-								<a href="/{{ post.id }}">
-												<div class="post_container">
-														<span class="post-date">{{ post.last_updated }}</span>
-																<h3>{{ post.title }}</h3>
-																<div class="post_content">
-																				{{ post.text | markdown}}
-																</div>
-												</div>
-								</a>
-								{% endfor  %}
+	<div id="container">
+		<header>
+			<h1>Jere Nurminen</h1> 
+			<h2>Blog</h2>
+		</header>
+		<div id="content">
+			{% for post in posts: %}
+			<a href="/{{ post.id }}">
+				<div class="post_container">
+					<span class="post-date">{{ post.last_updated }}</span>
+					<h3>{{ post.title }}</h3>
+					<div class="post_content">
+						{{ post.text | markdown}}
+					</div>
 				</div>
-		  </div>
+			</a>
+			{% endfor  %}
+		</div>
+	</div>
   </body>
 </html>
